@@ -5,13 +5,12 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pymanus", # Replace with your own username
-    version="0.0.2",
+    version="0.0.3",
     author="Manuel Solimano",
-    author_email="masolimano@uc.cl",
+    author_email="masolimano at uc dot cl",
     description="Personal suite of tools for astronomy research",
     long_description=long_description,
     long_description_content_type="text/markdown",
-#    url="https://github.com/pypa/sampleproject",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
