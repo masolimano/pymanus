@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pymanus", # Replace with your own username
-    version="0.0.1",
+    version="0.0.2",
     author="Manuel Solimano",
     author_email="masolimano@uc.cl",
     description="Personal suite of tools for astronomy research",
