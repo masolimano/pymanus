@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pymanus", # Replace with your own username
-    version="0.0.3",
+    name="pymanus",
+    version="0.0.4",
     author="Manuel Solimano",
     author_email="masolimano at uc dot cl",
     description="Personal suite of tools for astronomy research",
