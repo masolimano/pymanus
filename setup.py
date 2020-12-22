@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pymanus",
-    version="0.0.5",
+    version="0.0.7",
     author="Manuel Solimano",
     author_email="masolimano at uc dot cl",
     description="Personal suite of tools for astronomy research",
