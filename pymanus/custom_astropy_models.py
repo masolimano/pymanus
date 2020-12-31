@@ -40,7 +40,7 @@ class AsymmetricGaussian1D(am.Fittable1DModel):
         """
         Full width at half maximum
         """
-        return self.width * GAUSSIAN_SIGMA_TO_FWHM / (1 - 2 * np.log(2) * asym ** 2)
+        return self.width * GAUSSIAN_SIGMA_TO_FWHM / (1 - 2 * np.log(2) * self.asym ** 2)
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
