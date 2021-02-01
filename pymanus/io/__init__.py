@@ -2,17 +2,31 @@ import os
 
 def next_path(path_pattern):
     """
-    Finds the next free path in an sequentially named list of files
-
-    e.g. path_pattern = 'file-%s.txt':
-
-    file-1.txt
-    file-2.txt
-    file-3.txt
-
+    Finds the next free path in an sequentially named list of files.
     Runs in log(n) time where n is the number of existing files in sequence
 
+    Parameters
+    ----------
+    path_pattern: str
+        String containing the pattern of the filename to increment. It has
+        to contain a format specifier in the new-style format minilanguage
+
+    Returns
+    ---------
+    next_path: str
+        Next filename in the current folder following the input pattern.
+
     Note: Snippet stolen from `James` on SO/17984809
+
+    Example usage:
+    ---------
+    >>> import os
+    >>> os.chdir('/tmp/')
+    >>> os.mkdir('test-001')
+    >>> os.mkdir('test-002')
+    >>> next_path('test-{:03d}')
+    'test-003'
+
     """
     i = 1
 
@@ -29,5 +43,6 @@ def next_path(path_pattern):
 
     return path_pattern.format(b)
 
-if __name__ == '__main__':
-    print(next_path('peo{:02d}.txt'))
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
