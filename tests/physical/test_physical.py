@@ -40,3 +40,17 @@ class TestLuminosityPrime:
         lum_prime = luminosity_prime(obs_flux, redshift, obs_freq)
         assert abs(expected_outcome - lum_prime.nominal_value) < expected_error
         assert abs(expected_error - lum_prime.std_dev) < 1e10
+
+    def test_aztec2_ufloat_co54B(self):
+        """
+        Testing `luminosity_prime` for non-ufloat input against
+        ^12CO(5->4) luminosity of AzTEC2-B according to Jiménez-Andrade et al. (2020)
+        """
+        obs_flux = ufloat(0.325, 0.04)
+        redshift = 4.633
+        obs_freq = 102.30
+        expected_outcome = 1.0e10
+        expected_error = 0.1e10
+        lum_prime = luminosity_prime(obs_flux, redshift, obs_freq)
+        assert abs(expected_outcome - lum_prime.nominal_value) < expected_error
+        assert abs(expected_error - lum_prime.std_dev) < 1e10
