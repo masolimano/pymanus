@@ -1,9 +1,8 @@
 import numpy as np
 import astropy.units as u
-import uncertainties as unc
 from astropy.cosmology import FlatLambdaCDM
 from astropy.modeling.physical_models import BlackBody
-from scipy.constants import h, k, c # These are not in cgs but doesn't matter since we use ratios anyway
+from scipy.constants import h, k # These are not in cgs but doesn't matter since we use ratios anyway
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
 def luminosity_prime(obs_flux, redshift, obs_freq):

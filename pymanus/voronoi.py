@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from scipy.spatial import Voronoi
 
 def voronoi_finite_polygons_2d(vor, radius=None):
     """
