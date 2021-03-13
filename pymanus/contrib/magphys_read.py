@@ -81,8 +81,8 @@ class MagphysOutput(object):
         filternames = filternames.split()
         #flux = np.array(fitinfo[2].split(), dtype=float) * u.Jy
         #fluxerr = np.array(fitinfo[3].split(), dtype=float) * u.Jy
-        flux = np.array([obs[row][flt] for flt in filternames]) * u.Jy
-        fluxerr = np.array([obs[row][flt + '_err'] for flt in filternames]) * u.Jy
+        flux = np.array([float(obs[row][flt]) for flt in filternames]) * u.Jy
+        fluxerr = np.array([float(obs[row][flt + '_err']) for flt in filternames]) * u.Jy
         predicted = np.array(fitinfo[12].split(), dtype=float) * u.Jy
         self.obs_filters = filternames
         self.obs_filters_waves = dict(zip(filters_tab['name'], filters_tab['lambda_eff'] * u.um))
@@ -242,6 +242,9 @@ class MagphysOutput(object):
             ax.set_xscale('log')
             ax.set_yscale('log')
             ax.legend()
+
+            self.model_fnu = model_fnu
+            self.wave = wave
 
 
 

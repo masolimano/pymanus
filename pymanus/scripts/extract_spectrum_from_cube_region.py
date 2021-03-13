@@ -39,7 +39,7 @@ def extract(cube_filename, region_filename):
 
             primary = fits.PrimaryHDU(spec, header=spec_hdr)
             stat = fits.ImageHDU(varspec, header=var_hdr)
-            return fits.HDUList([primary, stat])
+            return fits.HDUList([primary, stat]) # BUG: <-- this will only yield the last spectrum
 
 def main(args=None):
     pass
