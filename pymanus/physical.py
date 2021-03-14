@@ -2,7 +2,8 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import FlatLambdaCDM
 from astropy.modeling.physical_models import BlackBody
-from scipy.constants import h, k # These are not in cgs but doesn't matter since we use ratios anyway
+#from scipy.constants import h, k # These are not in cgs but doesn't matter since we use ratios anyway
+from astropy.constants import h, k_B
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
 def luminosity_prime(obs_flux, redshift, obs_freq):
@@ -29,12 +30,75 @@ def luminosity_prime(obs_flux, redshift, obs_freq):
     cosmo_factor = lum_distance ** 2 / ((1 + redshift) ** 3 * (obs_freq ** 2))
     return 3.25e7 * obs_flux * cosmo_factor
 
-def gamma_rj(t_d, nu_obs, z):
+def gamma_rj(nu_obs, z, t_d):
     """
     Rayleigh-Jeans correction factor. Frequencies (Hz) are given in observed frame.
+    Equation (6) from  Scoville et al. 2016, ApJ, 820, 83.
+
+    Parameters
+    ---------
+    t_d: float
+        Dust temperature in Kelvin
+    nu_obs: float
+        Observed frequency in Hertz
+    z: float
+        Redshift
     """
-    beta = h * nu_obs * (1 + z) / (k * t_d)
+    beta = h * nu_obs * (1 + z) / (k_B * t_d)
     return beta / (np.exp(beta) - 1)
+
+def luminosity_nu_rest(s_obs, z):
+    """
+    Rest-frame specific luminosity.
+
+    Parameters
+    ----------
+    s_obs: Quantity
+        Flux density in the F_nu scheme.
+    z: float
+        Redshift.
+    """
+    luminosity_distance = cosmo.luminosity_distance(z).to(u.Mpc)
+    return s_obs * 4 * np.pi * luminosity_distance ** 2 / (1 + z)
+
+def luminosity_nu_850um(s_obs, z, nu_obs, t_d, beta):
+    """
+    850µm specific luminosity assuming Rayleigh-Jeans far-ir spectrum,
+    dust temperature, and dust emissivity.
+
+    Parameters
+    ----------
+    s_obs: Quantity
+        Observed flux density in F_nu scheme.
+    z: float
+        Redshift.
+    nu_obs: Quantity
+        Observed frequency.
+    t_d: Quantity
+        Dust temperature.
+    beta: float
+        Dust emissivity.
+    """
+    nu_850 = (850 * u.um).to(u.GHz, equivalencies=u.spectral())
+    nu_rest = nu_obs * (1 + z)
+    rj_correction = gamma_rj(nu_850, 0, t_d) / gamma_rj(nu_obs, z, t_d)
+    return luminosity_nu_rest(s_obs, z) * rj_correction * (nu_850 / nu_rest) ** (2 + beta)
+
+def integrated_flux_from_Lline(Lline, nu_obs, z):
+    """
+    Compute velocity-integrated flux density from
+    L'line luminosity.
+
+    Lline: Quantity
+        L'line luminosity, typically in units of K km/s pc^2
+    nu_obs: Quantity
+        Line observed-frame frequency
+    z: float
+        Redshift.
+    """
+    const = 3.25e-5 * u.K * u.GHz ** 2 / u. Jy
+    lum_distance2 = cosmo.luminosity_distance(z) ** 2
+    return (Lline * (1 + z) ** 3 * nu_obs ** 2 / lum_distance2 / const).to(u.Jy * u.km / u.s)
 
 def dust_mass_following_casey19(
     nu_obs,
@@ -98,3 +162,24 @@ def dust_mass_following_casey19(
         return factor1 * factor2 * factor3 * factor4 / 1.988e33
     else:
         return factor1 * factor2 * factor3 / 1.988e33
+
+if __name__ == '__main__':
+    from astropy import uncertainty as unc
+    from matplotlib import pyplot as plt
+    nu_850 = 352.7 * u.GHz
+    nu_obs = 343.4 * u.GHz
+    z = 0.7708
+    s_obs = unc.normal(center=1.2*u.mJy, std=0.33 * u.mJy, n_samples=5000)
+    beta = unc.normal(center=1.8, std=0.1, n_samples=5000)
+    Td = unc.normal(center=25*u.K, std=5*u.K, n_samples=5000)
+    rjc = gamma_rj(nu_850, 0, Td) / gamma_rj(nu_obs, z, Td)
+    L850 = luminosity_nu_850um(s_obs, z, nu_obs, Td, beta).to(1e30 * u.erg/u.s/u.Hz)
+    print(L850.pdf_percentiles([16, 50, 84]))
+    scaling_s16 = 3.02e-21 * u.K * u.km * u.pc ** 2 * u.Hz / u.erg
+    LCO = scaling_s16 * L850.to(u.erg/u.s/u.Hz)
+    print(LCO.pdf_percentiles([16, 50, 84]))
+    r21 = unc.normal(center=0.75, std=0.11, n_samples=5000) # Boogard+20
+    LCO21 = r21 * LCO
+    nu_CO21_obs = 130.189 * u.GHz
+    ICO21 = integrated_flux_from_Lline(LCO21, nu_CO21_obs, z)
+    print(ICO21.pdf_percentiles([16, 50, 84]))
