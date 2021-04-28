@@ -131,7 +131,7 @@ def dust_mass_following_casey19(
     t_dust:
         Dust temperature in Kelvin
     correct_cmb:
-        Account for the effect of CMB heating (relevant at z>3-4)
+        Account for the effect of CMB heating (relevant at z > 4)
 
     Return
     --------
@@ -144,17 +144,18 @@ def dust_mass_following_casey19(
     # redshifting
     # nu_rest = nu_obs / (1 + z)   <--- This is wrong!
     nu_rest = nu_obs * (1 + z)
+    s_obs = (s_obs * u.mJy).to(u.erg/u.s/u.cm**2/u.Hz).value
 
     # Flux to luminosity
     factor1 = s_obs * cosmo.luminosity_distance(z).to(u.cm).value ** 2 * (1 + z) ** (-3 - beta) / \
-        (kappa_ref * dust_bb(nu_ref * u.Hz).value)
+        (kappa_ref * (dust_bb(nu_ref * u.Hz) * u.sr).to(u.erg/u.s/u.cm**2/u.Hz).value)
 
 
     # Dust opacity scaling
     factor2 = (nu_ref / nu_obs) ** (2 + beta)
 
     # Rayleigh-Jeans tail scaling
-    factor3 = gamma_rj(t_dust, nu_ref, 0) / gamma_rj(t_dust, nu_obs, z)
+    factor3 = (gamma_rj(nu_ref * u.Hz, 0, t_d=t_dust * u.K) / gamma_rj(nu_obs * u.Hz, z, t_dust * u.K)).value
 
     # CMB heating correction factor
     if correct_cmb:
@@ -164,22 +165,8 @@ def dust_mass_following_casey19(
         return factor1 * factor2 * factor3 / 1.988e33
 
 if __name__ == '__main__':
-    from astropy import uncertainty as unc
-    from matplotlib import pyplot as plt
-    nu_850 = 352.7 * u.GHz
-    nu_obs = 343.4 * u.GHz
-    z = 0.7708
-    s_obs = unc.normal(center=1.2*u.mJy, std=0.33 * u.mJy, n_samples=5000)
-    beta = unc.normal(center=1.8, std=0.1, n_samples=5000)
-    Td = unc.normal(center=25*u.K, std=5*u.K, n_samples=5000)
-    rjc = gamma_rj(nu_850, 0, Td) / gamma_rj(nu_obs, z, Td)
-    L850 = luminosity_nu_850um(s_obs, z, nu_obs, Td, beta).to(1e30 * u.erg/u.s/u.Hz)
-    print(L850.pdf_percentiles([16, 50, 84]))
-    scaling_s16 = 3.02e-21 * u.K * u.km * u.pc ** 2 * u.Hz / u.erg
-    LCO = scaling_s16 * L850.to(u.erg/u.s/u.Hz)
-    print(LCO.pdf_percentiles([16, 50, 84]))
-    r21 = unc.normal(center=0.75, std=0.11, n_samples=5000) # Boogard+20
-    LCO21 = r21 * LCO
-    nu_CO21_obs = 130.189 * u.GHz
-    ICO21 = integrated_flux_from_Lline(LCO21, nu_CO21_obs, z)
-    print(ICO21.pdf_percentiles([16, 50, 84]))
+    Snu = 4.0 # mJy
+    nu_obs = 3.435e11
+    z = 2.3899
+    mdust = dust_mass_following_casey19(nu_obs, Snu, z, beta=1.8, correct_cmb=False)
+    print(f'{mdust:.2e}')
