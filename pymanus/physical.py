@@ -100,6 +100,21 @@ def integrated_flux_from_Lline(Lline, nu_obs, z):
     lum_distance2 = cosmo.luminosity_distance(z) ** 2
     return (Lline * (1 + z) ** 3 * nu_obs ** 2 / lum_distance2 / const).to(u.Jy * u.km / u.s)
 
+def atomic_carbon_mass_following_Weiss05(t_ex, LprimeCI):
+    """
+    Atomic carbon mass from the [C I](1-0) luminosity following
+    Weiss et al. (2005).
+
+    t_ex: (u)float
+        Excitation temperature of [C I]
+    LprimeCI: (u) float
+        Observed prime-Luminosity of the [CI](1-0)
+        line in units of K km/s pc^2
+    """
+    Q = 1 + 3 * umath.exp(- 23.6 / t_ex) + 5 * umath.exp(- 62.5 / t_ex)
+    M_CI = 5.706e-4 * Q * umath.exp(23.6 / t_ex) * LprimeCI / 3
+    return M_CI
+
 def dust_mass_following_casey19(
     nu_obs,
     s_obs,
