@@ -38,7 +38,9 @@ class AnchoredBeam(mpl.offsetbox.AnchoredOffsetbox):
         angle = -angle # make counter-clockwise
         self._box = mpl.offsetbox.AuxTransformBox(transform)
 
-        self.ellipse = mpl.patches.Ellipse((0, 0), bmin, bmaj, angle, fill=False, **kwargs)
+        defaultKwargs = dict(fill=False)
+        kwargs = {**defaultKwargs, **kwargs}
+        self.ellipse = mpl.patches.Ellipse((0, 0), bmin, bmaj, angle, **kwargs)
 
         semiminor = bmin / 2
         semimajor = bmaj / 2
@@ -67,3 +69,44 @@ class AnchoredBeam(mpl.offsetbox.AnchoredOffsetbox):
 
         super().__init__(loc, pad=pad, borderpad=borderpad,
                          child=self._box, prop=prop, frameon=frameon)
+
+class AnchoredSizeBar(mpl.offsetbox.AnchoredOffsetbox):
+    def __init__(self, transform, size, label, loc,
+                 pad=0.1, borderpad=0.1, sep=2, prop=None, frameon=True, linekwargs=dict(color='k'), labelkwargs=dict(color='k')):
+        """
+        Slightly modified version of the AnchoredSizeBar class in the
+        axes_grid1 mpl toolkit.
+        Draw a horizontal bar with the size in data coordinate of the given
+        axes. A label will be drawn above (center-aligned).
+
+        pad, borderpad in fraction of the legend font size (or prop)
+        sep in points.
+        """
+        self.size_bar = mpl.offsetbox.AuxTransformBox(transform)
+        self.size_bar.add_artist(mpl.lines.Line2D([0, size], [0, 0], **linekwargs))
+        self.txt_label = mpl.offsetbox.TextArea(label, textprops=labelkwargs)
+        self._box = mpl.offsetbox.VPacker(children=[self.txt_label, self.size_bar],
+                            align="center",
+                            pad=0, sep=sep)
+        super().__init__(loc, pad=pad, borderpad=borderpad,
+                         child=self._box, prop=prop, frameon=frameon)
+
+
+class AnchoredVTexts(mpl.offsetbox.AnchoredOffsetbox):
+    def __init__(self, transform, labels, loc, align='center',
+                 pad=0.1, borderpad=0.1, sep=2, prop=None, frameon=True,
+                 bbox_to_anchor=None):
+        """
+        Vertically stacked texts
+        """
+
+        self.txt_labels = list()
+        for label, kw in labels:
+            self.txt_labels.append(mpl.offsetbox.TextArea(label, textprops=kw, minimumdescent=False))
+
+        self._box = mpl.offsetbox.VPacker(children=self.txt_labels,
+                            align=align,
+                            pad=0, sep=sep)
+
+        super().__init__(loc, pad=pad, borderpad=borderpad,
+                         child=self._box, prop=prop, frameon=frameon, bbox_to_anchor=bbox_to_anchor, bbox_transform=transform)
