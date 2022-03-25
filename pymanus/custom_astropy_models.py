@@ -42,6 +42,11 @@ class AsymmetricGaussian1D(am.Fittable1DModel):
         """
         return self.width * GAUSSIAN_SIGMA_TO_FWHM / (1 - 2 * np.log(2) * self.asym ** 2)
 
+class DiracDelta2D(am.Fittable2DModel):
+    amplitude = am.Parameter()
+    x_0 = am.Parameter()
+    y_0 = am.Parameter()
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     wav = np.linspace(-2000, 2000, 300)
