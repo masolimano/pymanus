@@ -43,9 +43,27 @@ class AsymmetricGaussian1D(am.Fittable1DModel):
         return self.width * GAUSSIAN_SIGMA_TO_FWHM / (1 - 2 * np.log(2) * self.asym ** 2)
 
 class DiracDelta2D(am.Fittable2DModel):
+    """
+    2D Dirac Delta model, meant to represent point-like astronomical sources
+    in any gridded numerical representation.
+    """
     amplitude = am.Parameter()
     x_0 = am.Parameter()
     y_0 = am.Parameter()
+
+    @staticmethod
+    def evaluate(x, y, amplitude, x_0, y_0):
+        delta = np.zeros_like(x)
+        x1d = x[0]
+        y1d = y[:, 0]
+        i = np.argmin(np.abs(x1d - x_0))
+        j = np.argmin(np.abs(y1d - y_0))
+        delta[j, i] = amplitude
+        return delta
+
+    @staticmethod
+    def fit_deriv(x, y, amplitude, x_0, y_0):
+        return None
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
