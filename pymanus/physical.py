@@ -4,6 +4,8 @@ from astropy.cosmology import FlatLambdaCDM
 from astropy.modeling.physical_models import BlackBody
 #from scipy.constants import h, k # These are not in cgs but doesn't matter since we use ratios anyway
 from astropy.constants import h, k_B
+from scipy.special import gammaincinv
+import uncertainties as unc
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
 def luminosity_prime(obs_flux, redshift, obs_freq):
@@ -178,6 +180,23 @@ def dust_mass_following_casey19(
         return factor1 * factor2 * factor3 * factor4 / 1.988e33
     else:
         return factor1 * factor2 * factor3 / 1.988e33
+
+@unc.wrap
+def sersic_percentile_radius(n, q):
+    """
+    Calculates the q *100 percent luminosity radius of a Sérsic profile of index n.
+    Reference: https://ui.adsabs.harvard.edu/abs/1999A%26A...352..447C/abstract
+
+    Parameters
+    ----------
+    n: float
+        Sérsic index
+    q: float
+        Fraction(between 0.0 and 1.0) of the total luminosity.
+    """
+    bn = gammaincinv(2 * n, 0.5)
+    eta = (gammaincinv(2 * n, q) / bn) ** n
+    return eta
 
 if __name__ == '__main__':
     Snu = 4.0 # mJy
