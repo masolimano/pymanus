@@ -103,7 +103,7 @@ class DiracDelta2D(am.Fittable2DModel):
     def fit_deriv(x, y, amplitude, x_0, y_0):
         return None
 
-class TrunacatedExp1D(am.Fittable1DModel):
+class TruncatedExp1D(am.Fittable1DModel):
     """
     Truncated exponential profile. Might be useful to model asymmetric lines.
     """
@@ -140,14 +140,14 @@ class TrunacatedExp1D(am.Fittable1DModel):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     wav = np.linspace(0, 100, 501)
-    profile_red = TrunacatedExp1D(x_peak=43, amplitude=1.2, tau=2.5)
-    profile_blue = TrunacatedExp1D(x_peak=39, amplitude=.8, tau=-5)
+    profile_red = TruncatedExp1D(x_peak=43, amplitude=1.2, tau=2.5)
+    profile_blue = TruncatedExp1D(x_peak=39, amplitude=.8, tau=-5)
     ydata = (profile_red + profile_blue)(wav)
     lsf = am.models.Gaussian1D(mean=50, stddev=1.5)(wav)
     ydata_conv = convolve_fft(ydata, lsf)
     ydata_conv_noise = ydata_conv + np.random.normal(loc=0, scale=0.05, size=ydata.size)
 
-    init = TrunacatedExp1D(x_peak=44, amplitude=1, tau=3) + TrunacatedExp1D(x_peak=38, amplitude=.7, tau=-4)
+    init = TruncatedExp1D(x_peak=44, amplitude=1, tau=3) + TruncatedExp1D(x_peak=38, amplitude=.7, tau=-4)
     fit = Fitter1DLSF()
     best = fit(init, wav, ydata_conv_noise, lsf, yerr=0.05, maxiter=9000)
 
