@@ -1,7 +1,45 @@
 import numpy as np
 import astropy.modeling as am
+from astropy.modeling.fitting import (_validate_model,
+                                      _fitter_to_model_params,
+                                      _model_to_fit_params, Fitter,
+                                      _convert_input)
+from astropy.modeling.optimizers import Simplex
+from astropy.convolution import convolve, convolve_fft
 FLOAT_EPSILON = float(np.finfo(np.float32).tiny)
 GAUSSIAN_SIGMA_TO_FWHM = 2.0 * np.sqrt(2.0 * np.log(2.0))
+
+
+def chi2_1d_with_lsf(measured_vals, updated_model, lsf, yerr, x):
+    """
+    Custom likelihood for accounting for the instrument LSF when fitting spectral lines
+    """
+    model_vals = updated_model(x)
+    model_vals_convolved = convolve(model_vals, lsf, preserve_nan=True)
+    if yerr is None:
+        return np.nansum((measured_vals - model_vals_convolved) ** 2)
+    else:
+        return np.nansum((measured_vals - model_vals_convolved) ** 2 / yerr ** 2)
+
+class Fitter1DLSF(Fitter):
+
+    def __init__(self, optimizer=Simplex):
+        self.statistic = chi2_1d_with_lsf
+        super().__init__(optimizer, statistic=self.statistic)
+
+    def __call__(self, model, x, ydata, psf, yerr=None, **kwargs):
+        model_copy = _validate_model(model,
+                                     self._opt_method.supported_constraints)
+        farg = _convert_input(x, ydata)
+        farg = (model_copy, lsf, yerr) + farg
+        p0, _ = _model_to_fit_params(model_copy)
+
+        fitparams, self.fit_info = self._opt_method(
+            self.objective_function, p0, farg, **kwargs
+        )
+        _fitter_to_model_params(model_copy, fitparams)
+        return model_copy
+
 
 class AsymmetricGaussian1D(am.Fittable1DModel):
     """
@@ -101,9 +139,24 @@ class TrunacatedExp1D(am.Fittable1DModel):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    wav = np.linspace(0, 100, 500)
-    profile_red = TrunacatedExp1D(x_peak=40, amplitude=1, tau=2.5)
+    wav = np.linspace(0, 100, 501)
+    profile_red = TrunacatedExp1D(x_peak=43, amplitude=1.2, tau=2.5)
     profile_blue = TrunacatedExp1D(x_peak=39, amplitude=.8, tau=-5)
-    profile_extra = TrunacatedExp1D(x_peak=50, amplitude=0.3, tau=10)
-    plt.plot(wav, (profile_red + profile_blue + profile_extra)(wav))
+    ydata = (profile_red + profile_blue)(wav)
+    lsf = am.models.Gaussian1D(mean=50, stddev=1.5)(wav)
+    ydata_conv = convolve_fft(ydata, lsf)
+    ydata_conv_noise = ydata_conv + np.random.normal(loc=0, scale=0.05, size=ydata.size)
+
+    init = TrunacatedExp1D(x_peak=44, amplitude=1, tau=3) + TrunacatedExp1D(x_peak=38, amplitude=.7, tau=-4)
+    fit = Fitter1DLSF()
+    best = fit(init, wav, ydata_conv_noise, lsf, yerr=0.05, maxiter=9000)
+
+
+
+    plt.plot(wav, ydata_conv_noise)
+    plt.plot(wav, ydata)
+    plt.plot(wav, lsf)
+    plt.plot(wav, best(wav))
     plt.show()
+
+
