@@ -65,12 +65,45 @@ class DiracDelta2D(am.Fittable2DModel):
     def fit_deriv(x, y, amplitude, x_0, y_0):
         return None
 
+class TrunacatedExp1D(am.Fittable1DModel):
+    """
+    Truncated exponential profile. Might be useful to model asymmetric lines.
+    """
+    amplitude = am.Parameter()
+    x_peak = am.Parameter()
+    tau = am.Parameter()
+
+    @staticmethod
+    def evaluate(x, amplitude, x_peak, tau):
+        delta_x = x - x_peak
+        eval_range = delta_x * np.sign(tau) >= 0
+        zero_range = np.logical_not(eval_range)
+        result = np.select([eval_range, zero_range],
+                           [amplitude * np.exp(-delta_x / tau), 0])
+        return result
+
+    @staticmethod
+    def fit_deriv(x, amplitude, x_peak, tau):
+        delta_x = x - x_peak
+        eval_range = delta_x * np.sign(tau) >= 0
+        zero_range = np.logical_not(eval_range)
+        result = np.select([eval_range, zero_range],
+                           [(-1 / tau) * amplitude * np.exp(-delta_x / tau), 0])
+        return result
+    @property
+
+    def fwhm(self):
+        """
+        Full width at half maximum
+        """
+        return np.abs(self.tau) * np.log(2)
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    wav = np.linspace(-2000, 2000, 300)
-    profile = AsymmetricGaussian1D(x_peak=0, asym=0.2, width=90, amplitude=1)
-    sampled_profile = profile(wav)
-    imin, zero = np.argmin(sampled_profile), np.min(sampled_profile)
-    sampled_profile[:imin] = zero
-    plt.plot(wav, sampled_profile)
+    wav = np.linspace(0, 100, 500)
+    profile_red = TrunacatedExp1D(x_peak=40, amplitude=1, tau=2.5)
+    profile_blue = TrunacatedExp1D(x_peak=39, amplitude=.8, tau=-5)
+    profile_extra = TrunacatedExp1D(x_peak=50, amplitude=0.3, tau=10)
+    plt.plot(wav, (profile_red + profile_blue + profile_extra)(wav))
     plt.show()
