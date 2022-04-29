@@ -27,7 +27,7 @@ class Fitter1DLSF(Fitter):
         self.statistic = chi2_1d_with_lsf
         super().__init__(optimizer, statistic=self.statistic)
 
-    def __call__(self, model, x, ydata, psf, yerr=None, **kwargs):
+    def __call__(self, model, x, ydata, lsf, yerr=None, **kwargs):
         model_copy = _validate_model(model,
                                      self._opt_method.supported_constraints)
         farg = _convert_input(x, ydata)
