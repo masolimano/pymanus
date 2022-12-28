@@ -251,7 +251,6 @@ class MagphysOutput(object):
 
 if __name__ == '__main__':
     import os
-    plt.style.use('ticky')
     os.chdir('/home/manuel/arcos/SGASJ1226/sedfit/magphys_run14/')
     result = MagphysOutput('ARC_NORTH.fit', 'ARC_NORTH.sed')
     fig, ax = plt.subplots(figsize=(7, 4))
