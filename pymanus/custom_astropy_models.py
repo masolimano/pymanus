@@ -2,7 +2,7 @@ import numpy as np
 import astropy.modeling as am
 from astropy.modeling.fitting import (_validate_model,
                                       _fitter_to_model_params,
-                                      _model_to_fit_params, Fitter,
+                                      model_to_fit_params, Fitter,
                                       _convert_input)
 from astropy.modeling.optimizers import Simplex
 from astropy.convolution import convolve, convolve_fft
@@ -32,7 +32,7 @@ class Fitter1DLSF(Fitter):
                                      self._opt_method.supported_constraints)
         farg = _convert_input(x, ydata)
         farg = (model_copy, lsf, yerr) + farg
-        p0, _ = _model_to_fit_params(model_copy)
+        p0, _, _ = model_to_fit_params(model_copy)
 
         fitparams, self.fit_info = self._opt_method(
             self.objective_function, p0, farg, **kwargs
