@@ -80,6 +80,35 @@ class AsymmetricGaussian1D(am.Fittable1DModel):
         """
         return self.width * GAUSSIAN_SIGMA_TO_FWHM / (1 - 2 * np.log(2) * self.asym ** 2)
 
+class PiecewiseLinear1D(am.Fittable1DModel):
+    """
+    Piecewise function that is flat zero up to certain value of x
+    and then turns into a linear function. Allows for discontinuity
+    at x_0 (i.e is not a ReLU but a regular line convolved with a step function).
+    Can be useful to model a faint continuum redwards of Lya or the Lyman break in
+    galaxy spectra.
+    """
+    x_0 = am.Parameter(default=0)
+    slope = am.Parameter(default=1)
+    intercept = am.Parameter(default=0)
+
+    @staticmethod
+    def evaluate(x, x_0, slope, intercept):
+        line = lambda w: slope * w + intercept
+        zero = lambda w: 0
+        return np.piecewise(x, [x < x_0, x>= x_0], [zero, line])
+
+    @staticmethod
+    def fit_deriv(x, x_0, slope, intercept):
+        idd = lambda w: w
+        zero = lambda w: 0
+        one = lambda w: 1
+        d_x_0 = np.zeros_like(x)
+        d_slope = np.piecewise(x, [x < x_0, x >= x_0], [zero, idd])
+        d_intercept = np.piecewise(x, [x < x_0, x >= x_0], [zero, one])
+        return [d_x_0, d_slope, d_intercept]
+
+
 class DiracDelta2D(am.Fittable2DModel):
     """
     2D Dirac Delta model, meant to represent point-like astronomical sources
@@ -135,6 +164,32 @@ class TruncatedExp1D(am.Fittable1DModel):
         Full width at half maximum
         """
         return np.abs(self.tau) * np.log(2)
+
+class SplitGaussian1D(am.Fittable1DModel):
+    """
+    Alternative implementation of asymmetric Gaussian. This time is just
+    two Gaussians with different widths (but same amplitude) stitched together
+    at a given value of x.
+    """
+    amplitude = am.Parameter()
+    center = am.Parameter()
+    log_ratio = am.Parameter()
+    fwhm = am.Parameter()
+
+    @staticmethod
+    def evaluate(x, amplitude, center, log_ratio, fwhm):
+        x_prime = x - center
+        r = 10 ** log_ratio
+        sigma = fwhm / GAUSSIAN_SIGMA_TO_FWHM
+        sigma_minus = sigma / (1 + r)
+        sigma_plus = sigma * r / (1 + r)
+        plus_range = x_prime >= 0
+        minus_range = np.logical_not(plus_range)
+
+        gauss_minus = amplitude * np.exp( -0.5 * x_prime ** 2 / sigma_minus ** 2)
+        gauss_plus = amplitude * np.exp( -0.5 * x_prime ** 2 / sigma_plus ** 2)
+
+        return np.select([minus_range, plus_range], [gauss_minus, gauss_plus])
 
 
 if __name__ == '__main__':

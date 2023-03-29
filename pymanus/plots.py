@@ -102,7 +102,7 @@ class AnchoredVTexts(mpl.offsetbox.AnchoredOffsetbox):
 
         self.txt_labels = list()
         for label, kw in labels:
-            self.txt_labels.append(mpl.offsetbox.TextArea(label, textprops=kw, minimumdescent=False))
+            self.txt_labels.append(mpl.offsetbox.TextArea(label, textprops=kw, ))
 
         self._box = mpl.offsetbox.VPacker(children=self.txt_labels,
                             align=align,
