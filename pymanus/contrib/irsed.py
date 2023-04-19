@@ -67,6 +67,20 @@ def SnuNoBump(norm1, Tdust, alpha, beta, w0, restWave):
     return (1-sig) * pl + sig * bb
 
 
+def SnuCasey2012(norm1, Tdust, alpha, beta, w0, restWave):
+    """
+    MBB+powerlaw as defined in Casey (2012, see their Table 1)
+    WARNING: I do not know if the b coefficients will work for
+    a w0 different from 200 µm.
+    """
+    b1, b2, b3, b4 = 28.68, 6.246, 1.905e-4, 7.243e-5
+    bb = BB(norm1, Tdust, beta, w0, restWave)
+    eq_w = 1 / (np.power(b1 + b2 * alpha, -2) + (b3 + b4 * alpha) * Tdust)
+    norm_pl = BB(norm1, Tdust, beta, w0, eq_w) * np.power(eq_w, -alpha)
+    pl = powerLaw(norm_pl, restWave, alpha) * np.exp(-(restWave / eq_w) ** 2)
+    return pl + bb
+
+
 def IRLum(norm1, Tdust, alpha, beta, w0, z, fourPiLumDistSquared):
     """
     Calculate LIR. Output is in dex(Lsun) units
@@ -105,3 +119,11 @@ def Tredshift0(redshift, beta, Tdust):
     """equation for calculating the dust temperature if the galaxy were at z=0"""
     power = 4+beta
     return (Tdust**power - cosmo.Tcmb0.value**power * ((1+redshift)**power - 1)) ** (1/power)
+
+if __name__ == '__main__':
+    from matplotlib import pyplot as plt
+    sed  = SnuCasey2012(10.55, Tdust=22.9, alpha=1.9, beta=1.8, w0=200, restWave=xWa)
+    plt.loglog(xWa, sed)
+    plt.scatter([24],[5.5])
+    plt.ylim(1, 1e3)
+    plt.show()
