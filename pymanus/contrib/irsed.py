@@ -31,6 +31,17 @@ def BB(nbb, Tdust, beta, w0, restWave):
     d = np.subtract(np.exp(np.true_divide(np.true_divide(hck, restWave), Tdust)), 1.0)
     return np.true_divide(np.multiply(np.multiply(a, b), c), d)
 
+def MBB(nbb, Tdust, beta, restWave):
+    """
+    Modified blackbody law as defined in Bethermin+2020
+    Use astropy.units for Tdust and restWave!!
+    """
+    nu = restWave.to(u.Hz, equivalencies=u.spectral()) # Hz
+    a = np.power(10, nbb)
+    b = nu ** (3 + beta)
+    aux = np.exp(np.true_divide(c.h * nu, c.k_B * Tdust).decompose().value)
+    d = np.true_divide(1.0, np.subtract(aux, 1.0))
+    return np.multiply(np.multiply(a, b.value), d) / 1e59
 
 def powerLaw(npl, restWave, alpha):
     """Equation of the power law portion of SED"""
@@ -99,10 +110,29 @@ def IRLum(norm1, Tdust, alpha, beta, w0, z, fourPiLumDistSquared):
     return np.log10(np.sum(SnuNoBump(norm1, Tdust, alpha, beta, w0, xWa)) * deltaHz/(1+z) * fourPiLumDistSquared) + np.log10(conversionFactor)
 
 
-def nuLnu_to_LIR_ratio_MBB(Tdust, beta, w0, restWave):
-    nu = (restWave * u.um).to(u.Hz, equivalencies=u.spectral()).value
+def nuLnu_to_LIR_ratio_MBB(Tdust, beta, restWave, convention='IR'):
+    """
+    Tdust: Quantity
+        Dust temperature
+
+    beta: float
+        Rayleigh Jeans dust emissivity
+
+    restWave: Quantity
+        Rest wavelength at which the SED is evaluated
+
+    convention: str
+        IR: integrate between 8µm and 1000µm
+        FIR: integrate between 42µm adn 122µm
+    """
+    nu = restWave.to(u.Hz, equivalencies=u.spectral())
     nbb = 10 # does not matter bc it cancels out
-    return nu * BB(10, Tdust, beta, w0, restWave) / (np.sum(BB(10, Tdust, beta, w0, xWa)) * deltaHz)
+    if convention == 'FIR':
+        w, = np.where(np.logical_and(xWa > 42, xWa < 122))
+        integral = np.sum(MBB(nbb, Tdust, beta, xWa[w] * u.um)) * deltaHz * u.Hz
+    elif convention == 'IR':
+        integral = np.sum(MBB(nbb, Tdust, beta, xWa*u.um)) * deltaHz * u.Hz
+    return nu * MBB(nbb, Tdust, beta, restWave) / integral
 
 def nuLnu_to_LIR_ratio(Tdust, alpha, beta, w0, restWave):
     nu = (restWave * u.um).to(u.Hz, equivalencies=u.spectral()).value
@@ -121,9 +151,12 @@ def Tredshift0(redshift, beta, Tdust):
     return (Tdust**power - cosmo.Tcmb0.value**power * ((1+redshift)**power - 1)) ** (1/power)
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-    sed  = SnuCasey2012(10.55, Tdust=22.9, alpha=1.9, beta=1.8, w0=200, restWave=xWa)
-    plt.loglog(xWa, sed)
-    plt.scatter([24],[5.5])
-    plt.ylim(1, 1e3)
-    plt.show()
+#    from matplotlib import pyplot as plt
+#    for b in [1.0, 1.5, 1.8]:
+#        sed  = MBB(1.0, Tdust=40*u.K, beta=b, restWave=xWa * u.um)
+#        plt.loglog(xWa, sed)
+#    plt.show()
+    ratio_IR = nuLnu_to_LIR_ratio_MBB(75*u.K, beta=1.5, restWave=158*u.um)
+    ratio_FIR = nuLnu_to_LIR_ratio_MBB(75*u.K, beta=1.5, restWave=158*u.um, convention='FIR')
+    print(f'nu Lnu (160µm) / L_IR = {ratio_IR:.3f}')
+    print(f'nu Lnu (160µm) / L_FIR = {ratio_FIR:.3f}')
